@@ -1,0 +1,27 @@
+name: Sync All Forked Repositories
+
+on:
+  schedule:
+    # Runs every day at 00:00 UTC
+    - cron: '0 0 * * *'
+  # Allows manual runs from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  sync-forks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Sync all active forks with upstream
+        env:
+          GH_TOKEN: ${{ secrets.SYNC_TOKEN }}
+        run: |
+          repos=$(gh repo list --fork --no-archived --limit 1000 --json nameWithOwner --jq '.[].nameWithOwner')
+          
+          for repo in $repos; do
+            echo "Syncing $repo..."
+            if gh repo sync "$repo"; then
+              echo "✓ Successfully synced $repo"
+            else
+              echo "⚠️ Skipped or merge conflict on $repo"
+            fi
+          done
